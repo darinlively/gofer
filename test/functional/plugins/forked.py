@@ -1,4 +1,5 @@
 from logging import getLogger
+from time import sleep
 
 from gofer.decorators import *
 from gofer.agent.plugin import Plugin
@@ -13,6 +14,14 @@ class Forked(object):
 
     @remote(mode=FORKED)
     def test(self):
+        return 'done'
+
+    @remote(mode=FORKED)
+    def sleep(self, n=90):
+        while n > 0:
+            log.info('sleeping')
+            sleep(1)
+            n -= 1
         return 'done'
 
     @remote(mode=FORKED)

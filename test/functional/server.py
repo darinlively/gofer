@@ -449,12 +449,21 @@ def test_cancel(exit=0):
         sys.exit(0)
 
 
-def test_forked(exit=0):
+def test_forked(exit=0, with_cancel=0):
     agent = Agent()
     forked = agent.Forked()
+    # base
     print forked.test()
     print forked.test_logging()
     print forked.test_progress()
+    if with_cancel:
+        agent = Agent(wait=0)
+        forked = agent.Forked()
+        sn = forked.sleep()
+        sleep(10)
+        print 'sleeping'
+        admin = agent.Admin()
+        print 'cancelled: {}'.format(admin.cancel(sn))
     if exit:
         sys.exit(0)
 
@@ -491,7 +500,6 @@ if __name__ == '__main__':
     Agent.address = address
     Agent.base_options['authenticator'] = authenticator
 
-    test_forked()
     # test_zombie()
     # test_memory()
 
@@ -506,6 +514,7 @@ if __name__ == '__main__':
     # test_performance()
 
     demo_authentication(yp)
+    test_forked()
     smoke_test()
     demo_constructors()
     test_triggers()
