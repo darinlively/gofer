@@ -28,7 +28,6 @@ MSG = ' - %(message)s'
 
 FORMAT = ''.join((PREFIX, LEVEL, THREAD, NAME, LINE, MSG))
 FORMATTER = Formatter(FORMAT)
-HANDLER = None
 
 
 class LogHandler(SysLogHandler):
@@ -62,6 +61,19 @@ class LogHandler(SysLogHandler):
         root.handlers = handlers
 
     @staticmethod
+    def find():
+        """
+        Find the installed handler.
+        :return: The installed handler.
+        :rtype: LogHandler
+        """
+        root = getLogger()
+        handlers = root.handlers[:]
+        for h in handlers:
+            if isinstance(h, LogHandler):
+                return h
+
+    @staticmethod
     def clean(message):
         """
         Clean messages to be emitted.
@@ -73,6 +85,30 @@ class LogHandler(SysLogHandler):
         lines = message.split('\n')
         return ' '.join([ln.strip() for ln in lines])
 
+    def split(self, record):
+        """
+        Split each line in the traceback into separate records.
+        :param record: A log record.
+        :type record: LogRecord
+        :return: A list of records
+        :rtype: list
+        """
+        records = [record]
+        if record.exc_info:
+            msg = self.formatter.formatException(record.exc_info)
+            for line in msg.split('\n'):
+                r = LogRecord(
+                    name=record.name,
+                    level=record.levelno,
+                    pathname=record.pathname,
+                    lineno=record.lineno,
+                    msg=line,
+                    args=tuple(),
+                    exc_info=None)
+                records.append(r)
+            record.exc_info = None
+        return records
+
     def emit(self, record):
         """
         Emit the specified log record.
@@ -82,24 +118,8 @@ class LogHandler(SysLogHandler):
         :param record: A log record.
         :type record: LogRecord
         """
-        records = [record]
-        message = record.getMessage()
-        record.msg = LogHandler.clean(message)
-        record.args = tuple()
-        if record.exc_info:
-            msg = self.formatter.formatException(record.exc_info)
-            for line in msg.split('\n'):
-                _record = LogRecord(
-                    name=record.name,
-                    level=record.levelno,
-                    pathname=record.pathname,
-                    lineno=record.lineno,
-                    msg=line,
-                    args=tuple(),
-                    exc_info=None)
-                records.append(_record)
-            record.exc_info = None
-        for r in records:
+        for r in self.split(record):
+            message = r.getMessage()
+            r.msg = LogHandler.clean(message)
+            r.args = tuple()
             SysLogHandler.emit(self, r)
-
-
