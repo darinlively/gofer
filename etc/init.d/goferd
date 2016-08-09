@@ -5,16 +5,30 @@
 # description:  Gofer agent responds to commands from gofer server.
 # processname:  python
 #
+### BEGIN INIT INFO
+# Provides:       goferd
+# Required-Start: $local_fs $network $remote_fs $named $time
+# Required-Stop:  $local_fs $network $remote_fs $named
+# Default-Start:  3 5
+# Default-Stop:   0 1 6
+### END INIT INFO
 
 export SYSTEMCTL_SKIP_REDIRECT=1
 export SYSTEMCTL_IGNORE_DEPENDENCIES=1
 
-. /etc/init.d/functions
+[ -f /etc/init.d/functions ] && . /etc/init.d/functions
+[ -f /etc/rc.status ] && . /etc/rc.status
 
 BINDIR=/usr/bin
 PROG=goferd
 LOCK=/var/lock/subsys/$PROG
 PID=/var/run/$PROG.pid
+
+VENDOR=$( rpm --eval %_vendor )
+if [[ "$VENDOR" == "suse" ]] ;then
+  success() { true; rc_status -v; }
+  failure() { false; rc_status -v; }
+fi
 
 [ -f /etc/sysconfig/$PROG ] && . /etc/sysconfig/$PROG
 
